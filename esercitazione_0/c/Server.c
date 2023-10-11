@@ -14,16 +14,7 @@ int main(int argc, char* argv[])
     // fare controllo argomenti
     if (argc != 2) { perror(" numero di argomenti sbagliato …"); exit(EXIT_FAILURE);}
 
-    // lettura #righe
     file_out = argv[1];
-    printf("Quante righe vuoi inserire?\n");
-    readValues = scanf("%d", &righe);
-    if( readValues != 1 )
-    {
-        printf("Errore: immettere un intero!");
-        exit(1);
-    }
-    gets (buf); // consumare il fine linea
 
     fd = open(file_out, O_WRONLY|O_CREAT|O_TRUNC, 00640);
     if (fd < 0)
@@ -32,17 +23,8 @@ int main(int argc, char* argv[])
     }
 
     // corpo produttore
-    for(i=0; i<righe; ++i)
+    while(fgets(riga, MAX_STRING_LENGTH, stdin))
     {
-        printf("Inserisci la nuova riga\n");
-        gets (riga);
-        /* la gets legge tutta la riga, separatori inclusi, e trasforma il fine
-        linea in fine stringa */
-        
-        // aggiungo il fine linea
-        riga[strlen(riga)+1]='\0';
-        riga[strlen(riga)]='\n';
-        
         written = write(fd, riga, strlen(riga)); // uso della primitiva
         if (written <= 0)
         {

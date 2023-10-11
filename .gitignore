@@ -1,3 +1,9 @@
 .settings
 .metadata
 bin
+
+# Eseguibili C / java / file di testo output
+client
+server
+output.txt
+*.class
