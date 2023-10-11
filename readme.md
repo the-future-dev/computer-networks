@@ -7,6 +7,9 @@ Autori:
  - Alessandro Quaranta @
  - Gaia Verzelli @
 
+Consigli:
+ - in eclipse creare un workspace contentente l'intera cartella
+
 0. ### Lettura e Scrittura di File in Java e C
 Server - Produttore: crea il file; chiede all'utente quante righe vuole scrivere; scrive il contenuto digitato dall'utente **riga per riga**.
 Client - Consumatore (filtro): apre il file passato come argomento; legge il contenuto fino a EOF.
