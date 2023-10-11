@@ -21,6 +21,7 @@ Consigli:
 
 0. ### Lettura e Scrittura di File in Java e C
     a. Initialization
+
     Server - Produttore: crea il file; chiede all'utente quante righe vuole scrivere; scrive il contenuto digitato dall'utente **riga per riga**.
     Client - Consumatore (filtro): apre il file passato come argomento; legge il contenuto fino a `EOF`.
 
@@ -30,6 +31,10 @@ Consigli:
     - Client: ridirezione in ingresso:
         possa prendere il contenuto sia da input
         sia da un file passato come argomento
+
+    c. Extension
+    - Il produttore non chiede all’utente quante righe scrivere, ma è un programma sequenziale che legge fino a quando l’utente immette EOF (end of file) per terminare l’inserimento (è un filtro).
+    - l consumatore agisce in modo concorrente, lanciando diversi processi figli che lavorano in modo indipendente, ciascuno su uno dei file passati come argomenti in ordine Il processo padre controlla gli argomenti e genera i figli per il processing degli argomenti correttamente ricevuti (cioè file esistenti e presenti nel direttorio locale), quindi termina Ciascun processo figlio è un filtro che legge il file fino a EOF (end of file). Si noti che gli output generati non devono essere scritti su standard output, ma rispettivamente scritti sui singoli file di testo passati come argomenti all’invocazione (ovviamente cambiandone il contenuto)
 
 1. ### Socket Java senza connessione
 Client (filtro): invia al server pacchetti contententi "nome di file di testo" e "numero di linea nel file".
