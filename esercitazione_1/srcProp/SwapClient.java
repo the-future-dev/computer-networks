@@ -1,46 +1,53 @@
-//SwapClient.java
-
 import java.io.*;
 import java.net.*;
 
-public class SwapClient {
-	public static void main(String[] args) {
-		InetAddress addr = null;
-		int discoveryPort = -1;
-		String fileName = null;
+public class SwapClient 
+{	
+	public static void main(String[] args) 
+	{	
+		final int SO_TIMEOUT = 30000;
+		
+		// I valori dummy di inizializzazione servono a evitare che il parser dice che potrebbero non essere inizializzati 
+		// (di fatto se si verifica un errore per cui i valori non possono essere inizializzati il programma termina).
+		// Lo stesso vale per le variabili più in avanti
+		InetAddress discoveryServerAddesss = null;
+		int discoveryServerPort = -1;
+		String fileName = "";
 
-		// Check args
+		// Controllo argomenti
 		try {
 			if (args.length == 3) {
-				addr = InetAddress.getByName(args[0]);
-				discoveryPort = Integer.parseInt(args[1]);
+				discoveryServerAddesss = InetAddress.getByName(args[0]);
+				discoveryServerPort = Integer.parseInt(args[1]);
 				fileName = args[2];
-				System.out.println("Interrogo il discovery server:\nIndirizzo: " + args[0] + "\nporta: " 
-					+ discoveryPort + "\nfile: " + fileName);
+				System.out.println("Interrogo il discovery server:");
+				System.out.println("Indirizzo: " + args[0]);
+				System.out.println("Porta: " + args[1]);
+				System.out.println("File: " + args[2]);
 			} else {
-				System.out.println("Usage: java SwapClient ipDiscoveryServer portDiscoveryServer fileName");
+				System.err.println("Usage: java SwapClient <ipDiscoveryServer> <portDiscoveryServer> <fileName>");
 				System.exit(1);
 			}
 		}
 		catch (Exception e) {
-			System.out.println("Problemi, i seguenti: ");
+			System.err.println("Problemi, i seguenti: ");
 			e.printStackTrace();
 			System.exit(1);
 		}
 
-		//creazione e inizializzazione socket
+		// Creazione e inizializzazione socket e pacchetto
 		DatagramSocket datagramSocket = null;
 		DatagramPacket datagramPacket = null;
-		byte[] buf = new byte[256];
+		byte[] packetBuffer = new byte[256];
 		try {
 			datagramSocket = new DatagramSocket();
-			datagramSocket.setSoTimeout(30000);
-			datagramPacket = new DatagramPacket(buf, buf.length, addr, discoveryPort);
+			datagramSocket.setSoTimeout(SO_TIMEOUT);
+			datagramPacket = new DatagramPacket(packetBuffer, packetBuffer.length, discoveryServerAddesss, discoveryServerPort);
 			System.out.println("\nSwapClient: avviato");
 			System.out.println("Creata la socket: " + datagramSocket);
 		}
 		catch (SocketException e) {
-			System.out.println("Problemi nella creazione della socket: ");
+			System.err.println("Problemi nella creazione della socket: ");
 			e.printStackTrace();
 			System.out.println("SwapClient: interrompo...");
 			System.exit(1);
@@ -53,9 +60,9 @@ public class SwapClient {
 		ByteArrayInputStream biStream = null;
 		DataInputStream diStream = null;
 		byte[] data = null;
-
 		try {
-			// riempimento e invio del pacchetto (vuoto)
+			
+			// Invio pacchetto a DiscoveryServer per ricevere la porta a del mio server
 			try {
 				boStream = new ByteArrayOutputStream();
 				doStream = new DataOutputStream(boStream);
@@ -63,24 +70,26 @@ public class SwapClient {
 				data = boStream.toByteArray();
 				datagramPacket.setData(data);
 				datagramSocket.send(datagramPacket);
-				System.out.println("Richiesta inviata a " + addr + ", " + discoveryPort);
+				System.out.println("Richiesta inviata a " + discoveryServerAddesss + ", " + discoveryServerPort);
 			}
 			catch (IOException e) {
 				System.out.println("Problemi nell'invio della richiesta: ");
 				e.printStackTrace();
 			}
 
-			try {// settaggio del buffer di ricezione
-				datagramPacket.setData(buf);
+			// Attesa e ricezione della risposta (bloccante solo per SO_TIMEOUT millisecondi)
+			try {
+				datagramPacket.setData(packetBuffer);
 				datagramSocket.receive(datagramPacket);
-				// sospensiva solo per i millisecondi indicati, dopo solleva una SocketException
 			}
 			catch (IOException e) {
 				System.out.println("Problemi nella ricezione del datagramma: ");
 				e.printStackTrace();
 			}
 
-			try {//Estrazione risposta (porta o errore)
+			// Estrazione risposta (porta o errore)
+			try {
+				// TODO Modificare in modo che possa essere letto anche l'indirizzo del nuovo server
 				biStream = new ByteArrayInputStream(datagramPacket.getData(), 0, datagramPacket.getLength());
 				diStream = new DataInputStream(biStream);
 				risposta = diStream.readUTF();
@@ -90,6 +99,8 @@ public class SwapClient {
 				System.out.println("Problemi nella lettura della risposta: ");
 				e.printStackTrace();
 			}
+			
+			// Parsing delle risposta
 			if ( risposta.equals("File non trovato") ) {
 				System.out.println("Errore, il seguente: ");
 				System.out.println(risposta + "\nEsco...");
@@ -101,28 +112,25 @@ public class SwapClient {
 		}
 		catch (Exception e) {
 			System.out.println("Problemi nella ricezione dal Discovery Server: esco...");
-			// si potrebbe gestire altrimenti l'eccezione, ad esempio tentando nuovamente
 			e.printStackTrace();
 			System.exit(5);
 		}
-
-		// riutilizzo stesse variabili
-		datagramPacket = null;
-		buf = new byte[256];
-		datagramPacket = new DatagramPacket(buf, buf.length, addr, swapServerPort);
+		
+		// Inizializzo le variabili per la comunicazione
+		datagramPacket = new DatagramPacket(packetBuffer, packetBuffer.length, discoveryServerAddesss, swapServerPort);
 		boStream = new ByteArrayOutputStream();
 		doStream = new DataOutputStream(boStream);
-		BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 		
+		// Leggo le righe da scambiare
+		BufferedReader standardInputReader = new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Inserisci prima riga da scambiare contenuta nel file " + fileName +
 			" oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
 		try {
 			String firstRow = null;
 			String secondRow = null;
-			int req;
-			while ((firstRow = stdIn.readLine()) != null) {
+			while ((firstRow = standardInputReader.readLine()) != null) {
 				System.out.println("Inserisci seconda riga da scambiare contenuta nel file " + fileName + " oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
-				secondRow = stdIn.readLine();
+				secondRow = standardInputReader.readLine();
 				String firstAndSecondRows = firstRow + "-" + secondRow;
 
 				//Send request
@@ -131,7 +139,7 @@ public class SwapClient {
 					data = boStream.toByteArray();
 					datagramPacket.setData(data);
 					datagramSocket.send(datagramPacket);
-					System.out.println("Richiesta inviata a " + addr + ", " + swapServerPort);
+					System.out.println("Richiesta inviata a " + discoveryServerAddesss + ", " + swapServerPort);
 				} catch (IOException e) {
 					System.out.println("Problemi nell'invio della richiesta: ");
 					e.printStackTrace();
@@ -141,7 +149,7 @@ public class SwapClient {
 
 				//set buffer and receive answer
 				try {
-					datagramPacket.setData(buf);
+					datagramPacket.setData(packetBuffer);
 					datagramSocket.receive(datagramPacket);
 					// sospensiva solo per i millisecondi indicati, dopo solleva una SocketException
 				} catch (IOException e) {
@@ -166,14 +174,14 @@ public class SwapClient {
 				}
 				// tutto ok, pronto per nuova richiesta
 				System.out.println("Inserisci prima riga da scambiare contenuta nel file " + fileName + " oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
-			} // while
+			}
 		}
-		// qui catturo le eccezioni non catturate all'interno del while
-		// in seguito alle quali il client termina l'esecuzione
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println("\nSwapClient: termino...");
-		datagramSocket.close();
+		finally {
+			System.out.println("\nSwapClient: termino...");
+			datagramSocket.close();
+		}
 	}
 }
