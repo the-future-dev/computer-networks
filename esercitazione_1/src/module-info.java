@@ -1,8 +1,0 @@
-/**
- * 
- */
-/**
- * 
- */
-module esercitazione_1 {
-}
