@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
+// import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -46,10 +46,10 @@ public class SwapServer extends Thread {
 			DataInputStream diStream = null;
 			ByteArrayOutputStream boStream = null;
 			DataOutputStream doStream = null;
-			byte req = (byte) 0;
+			// byte req = (byte) 0;
 			int result = 0;
 			byte[] data = null;
-			String mask = null;
+			// String mask = null;
 			int firstRow=0, secondRow=0;
 
 			while (true) {
