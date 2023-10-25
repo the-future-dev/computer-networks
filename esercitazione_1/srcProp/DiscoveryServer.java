@@ -10,32 +10,59 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-
-
 public class DiscoveryServer {
 
-	private static int portaRichiesteClient = -1;
-	private static int portaRegistrazioneRS = -1;
+	private static int PORT = -1;
 
 	public static void main(String[] args) {
 
 		/* Controllo argomenti */
-		// We need precisely 2 arguments to initialize DiscoveryServer:
-		// - portaRichiesteClient: int
-		// - portaRegistrazione: int
-		if (args.length != 2) {
+		// Se non ho un numero pari di argomenti, oppure non viene registrato nessun
+		// server posso uscire
+		if ( (args.length-1) % 2 != 0 || args.length == 0) {
 			System.out.println("Usage: java DiscoveryServer portaDiscoveryServer file1 port1 ... fileN portN"); 
 			System.exit(1);
 		}
-		portaRichiesteClient = Integer.parseInt(args[0]);
-		portaRegistrazioneRS = Integer.parseInt(args[0]);
-		if (portaRichiesteClient <= 1024 || portaRichiesteClient > 65535) {
+		PORT = Integer.parseInt(args[0]);
+		if (PORT <= 1024 || PORT > 65535) {
 			System.out.println("The discovery server port is not valid: " + args[0]);
 			System.exit(2);
 		}
-		if (portaRegistrazioneRS <= 1024 || portaRegistrazioneRS > 65535) {
-			System.out.println("The discovery server port is not valid: " + args[0]);
-			System.exit(2);
+
+		int validArgs = 0;
+
+		File fileCorr;
+		int portCorr;
+
+		// per ogni coppia verifico che il primo argomento sia un file esistente
+		// e il secondo una porta valida
+		for (int i = 1; i < args.length; i = i + 2) {
+			if (!((fileCorr = new File(args[i])).exists())) {
+				System.out.println("One of the file passed as args, does not exist, the following:\n"+ args[i]);
+				continue;
+			}
+			try {
+				portCorr = Integer.parseInt(args[i+1]);
+				if (portCorr <= 1024 || portCorr > 65535) {
+					System.out.println("The following port is not valid: " + args[i]);
+					continue;
+				} else { 
+					// TODO: controllare (ciclo) che le porte successive siano diverse da quella corrente
+					// se arrivo qui: (a) il file esiste (b) la porta e' corretta
+					System.out.println("Aggiunto il seguente SwapServer - File: " + fileCorr + ",\t porta: " + portCorr);
+					validArgs++;
+				}
+			} catch (NumberFormatException e) {
+				System.out.println("The following port is not a valid integer: "+ args[i]);
+				continue;
+			}
+		} // for
+
+		/* Inizializzazione e attivazione dei SwapServer */
+		SwapServer currentSwapServer;
+		for (int i = 1; i <= validArgs; i+=2) {
+			currentSwapServer = new SwapServer(new File(args[i]), Integer.parseInt(args[i+1]));
+			currentSwapServer.start();
 		}
 
 		//Inizializzazione e apertura Socket
