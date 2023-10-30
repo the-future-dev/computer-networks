@@ -14,34 +14,58 @@ import java.net.SocketException;
 import java.util.StringTokenizer;
 
 public class SwapClient {
+    private static Socket socket;
+    private static byte[] data = null;
+
+    private static PrintWriter out;
+    private static BufferedReader in;
+    private static String response = null, swapServerAddressStr = null;
+    private static int swapServerPort = -1;
+    private static InetAddress swapServerAddress = null;
+
+    private static BufferedReader stdIn = null;
+    private static DataOutputStream doStream = null;
+    private static ByteArrayOutputStream boStream = null;
+    private static ByteArrayInputStream biStream = null;
+	private static DataInputStream diStream = null;
+
+    private static String discoveryServerAddress = null;
+    private static int serverPort = -1;
+    private static String fileName = null;
+
     public static void main(String[] args) {
-        if (args.length != 3) {
-            System.out.println("Usage: java DiscoveryClient <server-address> <server-port> <file-name>");
+        if (args.length != 2) {
+            System.out.println("Usage: java DiscoveryClient <server-address> <server-port>");
             System.exit(1);
         }
 
-        String discoveryServerAddress = args[0];
-        int serverPort = Integer.parseInt(args[1]);
-        String fileName = args[2];
+        discoveryServerAddress = args[0];
+        serverPort = Integer.parseInt(args[1]);
+        // fileName is read from input // fileName = args[2]
  
-        Socket socket;
-        byte[] data = null;
+        try{
+            stdIn = new BufferedReader(new InputStreamReader(System.in));
+        } catch (Exception e) {
+			System.out.println("Problemi, i seguenti: ");
+			e.printStackTrace();
+			System.exit(1);
+		}
 
-        PrintWriter out;
-        BufferedReader in;
-        String response = null, swapServerAddressStr = null;
-        int swapServerPort = -1;
-        InetAddress swapServerAddress = null;
         /*
          * Comunicazione con DiscoveryServer:
+         *  Output: lista dei files disponibili
          *  Input: nome di un file di testo
-         *  Output:
-         *   - IP + porta afferenti al server corrispondente.
+         *  Output: IP + porta afferenti al server corrispondente.
          */
         try {
             socket = new Socket(discoveryServerAddress, serverPort);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            response = in.readLine();
+            System.out.println("Files available: "+ response);
+            System.out.println("Insert the filename file:");
+            fileName = stdIn.readLine();
+            
             out.println(fileName);
             response = in.readLine();
             if (response.equalsIgnoreCase("Error 404: File not found")){
@@ -93,22 +117,8 @@ public class SwapClient {
 			System.exit(1);
 		}
 
-        BufferedReader stdIn = null;
-        DataOutputStream doStream = null;
-        ByteArrayOutputStream boStream = null;
-        ByteArrayInputStream biStream = null;
-		DataInputStream diStream = null;
 
-        try{
-            datagramPacket = null;
-            buf = new byte[256];
-            stdIn = new BufferedReader(new InputStreamReader(System.in));
-        } catch (Exception e) {
-			System.out.println("Problemi, i seguenti: ");
-			e.printStackTrace();
-			System.exit(1);
-		}
-
+        buf = new byte[256];
         System.out.println("Inserisci prima riga da scambiare contenuta nel file " + fileName +
 			" oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
 		
@@ -152,12 +162,13 @@ public class SwapClient {
                         System.out.println("Inserisci seconda riga da scambiare contenuta nel file " + fileName + " oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
                         continue;
                     }
+
+                    //Swap righe
                     try {
                         biStream = new ByteArrayInputStream(datagramPacket.getData(), 0, datagramPacket.getLength());
                         diStream = new DataInputStream(biStream);
                         int esitoScambioRighe = diStream.readInt();
                         System.out.println("Esito scambio righe: " + esitoScambioRighe);
-                        
                     } catch (IOException e) {
                         System.out.println("Problemi nella lettura della risposta: ");
                         e.printStackTrace();

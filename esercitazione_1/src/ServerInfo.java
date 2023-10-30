@@ -16,4 +16,9 @@ public class ServerInfo {
                 && this.file.equalsIgnoreCase(serverInfo.file)
                 && this.porta == serverInfo.porta;
     }
+
+    @Override
+    public String toString(){
+        return file;
+    }
 }

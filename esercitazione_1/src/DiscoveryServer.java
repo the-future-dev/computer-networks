@@ -94,6 +94,8 @@ class DiscoveryHandler extends Thread {
                 System.out.println("Discovery request initialized from "+clientSocket.getInetAddress().getHostAddress());
 
                 try {
+                    out.println(servers.toString());
+
                     // Reading the input: the name of a file. 
                     requestedFile = in.readLine();
 
@@ -145,7 +147,6 @@ class RegistrationHandler extends Thread {
 
     private InetAddress addr;
     private ServerInfo serverInfo;
-    private boolean serverAlreadyExists;
 
     public RegistrationHandler(ServerSocket socket, List<ServerInfo> servers) {
         this.socket = socket;
@@ -168,32 +169,50 @@ class RegistrationHandler extends Thread {
                 response = "Unsuccessful operation";
 
                 try{
-                    // Reading the input: IP - port - filename.txt 
+                    // Reading the input: registration/de-registration - IP - port - filename.txt 
                     registration = in.readLine();
                     parts = registration.split(" ");  // Assuming space-separated values
-                    if (parts.length != 3){
+                    if (parts.length != 4){
                         throw new IllegalArgumentException("Invalid input format");
                     }
-                    addr = InetAddress.getByName(parts[0]);
-                    serverInfo = new ServerInfo(addr, Integer.parseInt(parts[1]), parts[2]);
+                    boolean registering = Boolean.parseBoolean(parts[0]);
+                    addr = InetAddress.getByName(parts[1]);
+                    serverInfo = new ServerInfo(addr, Integer.parseInt(parts[2]), parts[3]);
 
                     // checking if this server informations are already present in the system.
-                    serverAlreadyExists = false;
+                    int serverInfoIndex = -1;
                     synchronized (servers) {
-                        for (ServerInfo si : servers) {
-                            if (si.equals(serverInfo)) {
-                                serverAlreadyExists = true;
+                        for (int i = 0; i < servers.size(); i++){
+                            if (servers.get(i).equals(serverInfo)){
+                                serverInfoIndex = i;
                                 break;
                             }
-                        }
+                        }                        
+                    }
+
+                    if (registering){
                         // registering if needed
-                        if (!serverAlreadyExists){
+                        if (serverInfoIndex == -1){ // server not present in the array
                             servers.add(serverInfo);
-                            System.out.println("Server Registrato con: IP "+serverInfo.IP.getHostAddress()+
+                            System.out.println("Server registrato con: IP "+serverInfo.IP.getHostAddress()+
                             " porta "+ serverInfo.porta+" nomefile: "+serverInfo.file+"\n");
+                            response = "Successful Registration";
                         } else {
                             System.out.println("Server Information already inside the array.");
                             response = "Sucessful operation, but server information already present.";
+                        }
+                    } else {
+                        // de-registeringminazione e la de-registrazione dinamica
+degli SR presso il DiscoveryServe
+                        if (serverInfoIndex != -1){ // server present in the array.
+                            serverInfo = servers.get(serverInfoIndex);
+                            servers.remove(serverInfo);
+                            response = "Successful De-Registration";
+                            System.out.println("Server de-registrato con: IP "+serverInfo.IP.getHostAddress()+
+                            " porta "+ serverInfo.porta+" nomefile: "+serverInfo.file+"\n");
+                        } else {
+                            System.out.println("Client requested de registering of server info not present.");
+                            response = "Successful operation, but server information wasn't present already.";
                         }
                     }
                 } // In case of malformed input or potential unexpected behaviour using server.

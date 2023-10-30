@@ -5,9 +5,20 @@ import java.util.StringTokenizer;
 
 public class SwapServer {
 
+	private static String nomeFile = null;
 	private static int port = -1;
 	private static int discoveryRegistrationPort = -1;
 	private static String discoveryServerIP;
+	private static DatagramSocket socket = null;
+	private static DatagramPacket packet = null;
+	private static byte[] buf = new byte[256];
+
+	private static boolean running = true;
+	private static boolean serving = false;
+
+	private static String firstLineCache = null;
+	private static String secondLineCache = null;
+
 
 	/*
 	 * Input:
@@ -33,17 +44,16 @@ public class SwapServer {
 			System.exit(1);
 		}
 
-		String nomeFile = null;
 		File file;
 
 		try{
 			discoveryServerIP = args[0];
 			discoveryRegistrationPort = Integer.parseInt(args[1]);
-			InetAddress addr = InetAddress.getByName(discoveryServerIP); // addr is not used but "prevenire è meglio che curare"
+			InetAddress.getByName(discoveryServerIP); // NOT used but we want to check thte existence of discoveryServerIP: "prevenire è meglio che curare"
 			port = Integer.parseInt(args[2]);
 			nomeFile = args[3];
 
-			if (!((file = new File(nomeFile)).exists())) {
+			if (!((file = new File(nomeFile)).exists())) { // check file
 				throw new FileNotFoundException(nomeFile);
 			}
 		} catch (NumberFormatException e){
@@ -64,7 +74,7 @@ public class SwapServer {
 		 */
 		try (Socket registrationSocket = new Socket(discoveryServerIP, discoveryRegistrationPort);
 			PrintWriter out = new PrintWriter(registrationSocket.getOutputStream(), true)) {
-			String registrationMessage = InetAddress.getLocalHost().getHostAddress() + " " + port + " " + nomeFile;
+			String registrationMessage = true +" "+InetAddress.getLocalHost().getHostAddress() + " " + port + " " + nomeFile; // Format: registration? SwapServerHost SwapServerPort SwapServerFile
 			out.println(registrationMessage);
 			System.out.println("Successful Registration to the Discovery Server.");
 		} catch (IOException e) {
@@ -73,14 +83,10 @@ public class SwapServer {
 		}
 
 		// Socket Initialization
-		DatagramSocket socket = null;
-		DatagramPacket packet = null;
-		byte[] buf = new byte[256];
-
 		try {
 			socket = new DatagramSocket(port);
 			packet = new DatagramPacket(buf, buf.length);
-			System.out.println("SwapServer per file " + nomeFile + " avviato con socket port: " + socket.getLocalPort()); 
+			System.out.println("Server inizializzato per il file " + nomeFile + "; ascolto la porta: " + socket.getLocalPort()); 
 		} catch (SocketException e) {
 			System.out.println("Problemi nella creazione della socket: ");
 			e.printStackTrace();
@@ -91,26 +97,53 @@ public class SwapServer {
 		BufferedWriter bw = null;
 		String line;
 		int count = 0;
-		String firstLineCache = null;
-		String secondLineCache = null;
+		
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			try (Socket registrationSocket = new Socket(discoveryServerIP, discoveryRegistrationPort);
+				PrintWriter out = new PrintWriter(registrationSocket.getOutputStream(), true)) {
+				String registrationMessage = false +" "+InetAddress.getLocalHost().getHostAddress() + " " + port + " " + nomeFile; // Format: registration? SwapServerHost SwapServerPort SwapServerFile
+				out.println(registrationMessage);
+				System.out.println("Successful DE-Registration to the Discovery Server.");
 
+				// Close SwapServer: if it is handling a request than it will complete the request.
+				running = false;
+				if (!serving){
+					socket.close();
+				}
+			} catch (IOException e) {
+				System.err.println("Error DE-registering with DiscoveryServer: " + e.getMessage());
+			}
+		}));
+		
 		try {
-			while (true) {
-				System.out.println("\nSwapServer in attesa di richieste...");
+			while (running) {
 				ByteArrayInputStream biStream = null;
 				DataInputStream diStream = null;
 				ByteArrayOutputStream boStream = null;
 				DataOutputStream doStream = null;
-				byte[] data = null;
 				int result = 0, firstRow = 0, secondRow = 0;
+				byte[] data = null;
+				firstLineCache = null;
+				secondLineCache = null;
+				count = 0;
 				Arrays.fill(buf, (byte) 0);
+
+				serving = false;
+				System.out.println("\nSwapServer in attesa di richieste...");
 				/*
-				 * Ricezione della richiesta di swap dal client.
+				 * Ricezione della richiesta di swap dal client.DiscoveryServer
 				 */
 				try {
 					packet.setData(buf, 0, buf.length);
 					socket.receive(packet);
+					serving = true;
 					System.out.println("\n\nRequest received from: "+packet.getAddress().getHostAddress());
+				} catch(SocketException e){
+					if (running != false) {
+						System.err.println("Socket error: "+ e.getMessage());
+						e.printStackTrace();
+					}
+					continue;
 				} catch (IOException e) {
 					System.err.println("Problemi nella ricezione del datagramma: "+ e.getMessage());
 					e.printStackTrace();
@@ -148,7 +181,7 @@ public class SwapServer {
 						bw = new BufferedWriter(new FileWriter("temp"));
 						
 						// Read the file once to get the lines
-						while ((line = br.readLine())!=null && (firstLineCache==null || secondLineCache==null)) {
+						while ((line = br.readLine())!=null ) { // && (firstLineCache !=null || secondLineCache !=null)
 							count++;
 							if (count == firstRow) {
 								firstLineCache = line;
@@ -236,9 +269,8 @@ public class SwapServer {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println("SwapServer: termino...");
-		socket.close();
-		
+		System.out.println("SwapServer: termino.");
+		if (!socket.isClosed()) socket.close();
 	}
 
 }
