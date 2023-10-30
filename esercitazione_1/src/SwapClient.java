@@ -13,7 +13,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.StringTokenizer;
 
-public class Client {
+public class SwapClient {
     public static void main(String[] args) {
         if (args.length != 3) {
             System.out.println("Usage: java DiscoveryClient <server-address> <server-port> <file-name>");
@@ -102,9 +102,6 @@ public class Client {
         try{
             datagramPacket = null;
             buf = new byte[256];
-            datagramPacket = new DatagramPacket(buf, buf.length, swapServerAddress, swapServerPort);
-            boStream = new ByteArrayOutputStream();
-            doStream = new DataOutputStream(boStream);
             stdIn = new BufferedReader(new InputStreamReader(System.in));
         } catch (Exception e) {
 			System.out.println("Problemi, i seguenti: ");
@@ -125,13 +122,18 @@ public class Client {
                     // String firstAndSecondRows = firstRow + "/" + secondRow; // a malformatted input should return -4
 
                     //Send request
-                    try {					
+                    try {
+                        // Create new outputstream to send the rows to be swapped
+                        boStream = new ByteArrayOutputStream();
+                        doStream = new DataOutputStream(boStream);
+                        datagramPacket = new DatagramPacket(buf, buf.length, swapServerAddress, swapServerPort);
+
+                        // Send rows
                         doStream.writeUTF(firstAndSecondRows);
                         data = boStream.toByteArray();
                         datagramPacket.setData(data);
                         datagramSocket.send(datagramPacket);
                         System.out.println("Richiesta inviata a " + swapServerAddress + ", " + swapServerPort);
-                        System.out.println("\t>"+ firstAndSecondRows);
                     } catch (IOException e) {
                         System.out.println("Problemi nell'invio della richiesta: ");
                         e.printStackTrace();
@@ -139,17 +141,16 @@ public class Client {
                         continue;
                     }
     
-                    //set buffer and receive answer
+                    //Receive SwapServer answer
                     try {
                         datagramPacket.setData(buf);
                         datagramSocket.receive(datagramPacket);
-                        // sospensiva solo per i millisecondi indicati, dopo solleva una SocketException
                     } catch (IOException e) {
+                        // SocketException includes timer out.
                         System.out.println("Problemi nella ricezione del datagramma: ");
                         e.printStackTrace();
                         System.out.println("Inserisci seconda riga da scambiare contenuta nel file " + fileName + " oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
                         continue;
-                        // il client continua l'esecuzione riprendendo dall'inizio del ciclo
                     }
                     try {
                         biStream = new ByteArrayInputStream(datagramPacket.getData(), 0, datagramPacket.getLength());
@@ -162,14 +163,13 @@ public class Client {
                         e.printStackTrace();
                         System.out.println("Inserisci seconda riga da scambiare contenuta nel file " + fileName + " oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
                         continue;
-                        // il client continua l'esecuzione riprendendo dall'inizio del ciclo
                     }
-                    // tutto ok, pronto per nuova richiesta
+
+                    // inizio nuova richiesta allo stesso SwapServer
                     System.out.println("Inserisci prima riga da scambiare contenuta nel file " + fileName + " oppure Ctrl+D(Unix)/Ctrl+Z(Win)+invio per uscire");
                 } // while
             }
-            // qui catturo le eccezioni non catturate all'interno del while
-            // in seguito alle quali il client termina l'esecuzione
+ 
             catch (Exception e) {
                 e.printStackTrace();
             }

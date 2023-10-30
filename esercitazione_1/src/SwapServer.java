@@ -66,7 +66,7 @@ public class SwapServer {
 			PrintWriter out = new PrintWriter(registrationSocket.getOutputStream(), true)) {
 			String registrationMessage = InetAddress.getLocalHost().getHostAddress() + " " + port + " " + nomeFile;
 			out.println(registrationMessage);
-			System.out.println("Registration:\n\t"+registrationMessage);
+			System.out.println("Successful Registration to the Discovery Server.");
 		} catch (IOException e) {
 			System.err.println("Error registering with DiscoveryServer: " + e.getMessage());
 			System.exit(4);
@@ -87,22 +87,22 @@ public class SwapServer {
 			System.exit(1);
 		}
 
-		try {
-			ByteArrayInputStream biStream = null;
-			DataInputStream diStream = null;
-			ByteArrayOutputStream boStream = null;
-			DataOutputStream doStream = null;
-			byte[] data = null;
-			int result = 0, firstRow = 0, secondRow = 0;
+		BufferedReader br = null;
+		BufferedWriter bw = null;
+		String line;
+		int count = 0;
+		String firstLineCache = null;
+		String secondLineCache = null;
 
+		try {
 			while (true) {
 				System.out.println("\nSwapServer in attesa di richieste...");
-				biStream = null;
-				diStream = null;
-				boStream = null;
-				doStream = null;
-				data = null;
-				result = 0; firstRow = 0; secondRow = 0;
+				ByteArrayInputStream biStream = null;
+				DataInputStream diStream = null;
+				ByteArrayOutputStream boStream = null;
+				DataOutputStream doStream = null;
+				byte[] data = null;
+				int result = 0, firstRow = 0, secondRow = 0;
 				Arrays.fill(buf, (byte) 0);
 				/*
 				 * Ricezione della richiesta di swap dal client.
@@ -111,11 +111,10 @@ public class SwapServer {
 					packet.setData(buf, 0, buf.length);
 					socket.receive(packet);
 					System.out.println("\n\nRequest received from: "+packet.getAddress().getHostAddress());
-					System.out.println("\nPacket: "+packet.getData().toString());
 				} catch (IOException e) {
 					System.err.println("Problemi nella ricezione del datagramma: "+ e.getMessage());
 					e.printStackTrace();
-					continue; // Server continue providing the service.
+					continue; // Server continues providing the service.
 				}
 
 				// Estrazione prima e seconda riga da scambiare dal datagramma
@@ -129,8 +128,8 @@ public class SwapServer {
 					firstRow = Integer.parseInt((String)st.nextElement());
 					secondRow = Integer.parseInt((String)st.nextElement());			
 					
-					System.out.println("FirstRow: " + firstRow + " SecondRow: " + secondRow);
-					
+					System.out.println(firstAndSecondRows);
+
 					biStream.close();
 					diStream.close();
 				}
@@ -139,13 +138,6 @@ public class SwapServer {
 					e.printStackTrace();
 					result = -4;
 				}
-
-				BufferedReader br = null;
-				BufferedWriter bw = null;
-				String line;
-				int count = 0;
-				String firstLineCache = null;
-				String secondLineCache = null;
 
 				if (result >= 0){
 					// swap e invio dell'esito
@@ -228,13 +220,14 @@ public class SwapServer {
 					packet.setData(data, 0, data.length);
 					socket.send(packet);
 
-					// boStream.close();
-					// doStream.close();
+					boStream.close();
+					doStream.close();
 				}catch (Exception e){
 					System.err.println("Problemi, i seguenti: "+ e.getMessage());
 					e.printStackTrace();
 					continue; // Server continue providing the service.
 				}
+				System.out.println("End operation\n\n\n");
 			} // while
 
 		}
