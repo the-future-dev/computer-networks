@@ -10,29 +10,34 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class DiscoveryServer {
-
-	private static int portaRichiesteClient = -1;
-	private static int portaRegistrazioneRS = -1;
-	static List<ServerInfo> serverList = null;
+public class DiscoveryServer 
+{
+	private static List<ServerInfo> serverList = 
+        Collections.synchronizedList(new ArrayList<>());
 	
-	public static void main(String[] args) {
-		/*
-		 * Argument checks.
+	public static void main(String[] args) 
+    {
+        int portaRichiesteClient = -1;
+	    int portaRegistrazioneRS = -1;
+        ServerSocket discoverySocket = null;
+        ServerSocket registrationSocket = null;
+
+        /*
+		 *  Arguments check.
 		 */
 		if (args.length != 2) {
 			System.out.println("Usage: java <portaRichiesteClient: int> <portaRegistrazioneRS: int>"); 
 			System.exit(1);
 		}
-
-        try{
+        try {
             portaRichiesteClient = Integer.parseInt(args[0]);
             portaRegistrazioneRS = Integer.parseInt(args[1]);
-        } catch(NumberFormatException e){
+        } 
+        catch(NumberFormatException e) {
 			System.out.println("Usage: java <portaRichiesteClient: int> <portaRegistrazioneRS: int>"); 
 			System.exit(1);
         }
-
+        // Port numbers validation
 		if (portaRichiesteClient <= 1024 || portaRichiesteClient > 65535) {
 			System.out.println("The discovery server port is not valid: " + args[0]);
 			System.exit(2);
@@ -46,20 +51,26 @@ public class DiscoveryServer {
 		 *  Initialization and socket opening.
 		 */
 		try {
-			ServerSocket discoverySocket = new ServerSocket(portaRichiesteClient);
-			ServerSocket registrationSocket = new ServerSocket(portaRegistrazioneRS);
-			
-            serverList = Collections.synchronizedList(new ArrayList<>());
-
-			Thread discoveryThread = new Thread(new DiscoveryHandler(discoverySocket, serverList));
-	        Thread registrationThread = new Thread(new RegistrationHandler(registrationSocket, serverList));
-
-            registrationThread.start();
-            discoveryThread.start();
-		} catch(IOException e) {
+            discoverySocket = new ServerSocket(portaRichiesteClient);
+			registrationSocket = new ServerSocket(portaRegistrazioneRS);
+		} 
+        catch(IOException e) {
 			System.err.println("Error initializing server sockets: " + e.getMessage());
 	        System.exit(3);
 		}
+        
+        try {
+            Thread discoveryThread = new Thread(new DiscoveryHandler(discoverySocket, serverList));
+            Thread registrationThread = new Thread(new RegistrationHandler(registrationSocket, serverList));
+            registrationThread.start();
+            discoveryThread.start();
+        }
+        catch(Exception e) {
+            System.err.println("Error during thread execution: " + e.getMessage());
+            System.exit(3);
+        }
+        
+        // Socket is never closed.
 	}
 
 }
@@ -75,13 +86,15 @@ class DiscoveryHandler extends Thread {
 
     private final List<ServerInfo> servers;
 
-    public DiscoveryHandler(ServerSocket socket, List<ServerInfo> servers) {
+    public DiscoveryHandler(ServerSocket socket, List<ServerInfo> servers) 
+    {
         this.socket = socket;
         this.servers = servers;
     }
 
     @Override
-    public void run() {
+    public void run() 
+    {
         System.out.println("DiscoveryHandler running.\n");
         while (true) {
             try {
@@ -91,21 +104,23 @@ class DiscoveryHandler extends Thread {
                 // Initialization of the resources needed.
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 out = new PrintWriter(clientSocket.getOutputStream(), true);
-                System.out.println("Discovery request initialized from "+clientSocket.getInetAddress().getHostAddress());
+                System.out.println("Discovery request initialized from " + clientSocket.getInetAddress().getHostAddress());
 
                 try {
+                    // Sending available files to the client.
                     out.println(servers.toString());
-
                     // Reading the input: the name of a file. 
                     requestedFile = in.readLine();
 
-                    // file name validation:
+                    // If the requested file is not valid, respond with an error message.
                     if (requestedFile.trim().length() != requestedFile.length() || requestedFile.length() < 1 || requestedFile.length() > 255){
                         response = "Invalid file name";
-                    } // correct file name
+                    } 
+                    // Else, check for the file in the list of available files.
                     else {
-                        // Does it exists a server that enables you to modify that file? 
-                        response = "Error 404: File not found"; // Handling the file not existing. N.B: check client side before proceeding
+                        // Default message 
+                        response = "Error 404: File not found";
+                        // Does a server that enables you to modify that file exist? 
                         synchronized (servers) {
                             for (ServerInfo server : servers) {
                                 if (server.file.equals(requestedFile)) {
@@ -202,8 +217,7 @@ class RegistrationHandler extends Thread {
                             response = "Sucessful operation, but server information already present.";
                         }
                     } else {
-                        // de-registeringminazione e la de-registrazione dinamica
-degli SR presso il DiscoveryServe
+                        // de-registeringminazione e la de-registrazione dinamica degli SR presso il DiscoveryServe
                         if (serverInfoIndex != -1){ // server present in the array.
                             serverInfo = servers.get(serverInfoIndex);
                             servers.remove(serverInfo);

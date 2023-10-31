@@ -3,8 +3,8 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
-public class SwapServer {
-
+public class SwapServer 
+{
 	private static String nomeFile = null;
 	private static int port = -1;
 	private static int discoveryRegistrationPort = -1;
@@ -37,7 +37,8 @@ public class SwapServer {
 	 * -4: input problems
 	 * 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) 
+	{
 		// Input validation
 		if (args.length != 4) {
 			System.err.println("Usage: java SwapServer <DiscoveryServer_IP> <DiscoveryServer_Registration_Port> <SwapServer_Port> <file>");
