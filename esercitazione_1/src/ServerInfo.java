@@ -15,9 +15,10 @@ public class ServerInfo
 
     public boolean equals(ServerInfo serverInfo)
     {
-        return this.IP.getHostAddress().equalsIgnoreCase(serverInfo.IP.getHostAddress())
-                && this.file.equalsIgnoreCase(serverInfo.file)
-                && this.porta == serverInfo.porta;
+        return this.IP.getHostAddress()
+                .equalsIgnoreCase(serverInfo.IP.getHostAddress())
+            && this.file.equalsIgnoreCase(serverInfo.file)
+            && this.porta == serverInfo.porta;
     }
 
     @Override

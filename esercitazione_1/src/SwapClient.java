@@ -13,7 +13,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.StringTokenizer;
 
-public class SwapClient {
+public class SwapClient 
+{
     private static Socket socket;
     private static byte[] data = null;
 
@@ -33,7 +34,8 @@ public class SwapClient {
     private static int serverPort = -1;
     private static String fileName = null;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) 
+    {
         if (args.length != 2) {
             System.out.println("Usage: java DiscoveryClient <server-address> <server-port>");
             System.exit(1);
