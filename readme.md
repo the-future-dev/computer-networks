@@ -41,3 +41,32 @@ Client (filtro): invia al server pacchetti contententi "nome di file di testo" e
     unique request as it is without connection
 Server: receives the request from the client; verifies the file and the line existance; returns a response to the client: error or line content.
     sequential (mono-process) that executes an endless loop
+
+
+3. ### Socket C
+    #### LongerWord: senza connessione.
+    - Client: fa una richiesta con il nome di un file di testo (stringa) e riceve in risposta il numero di carateri della parola più lunga del file (int).
+    - Server: riceve il nome del file, se esiste lo analizza per identificare la parola formata dal maggior numero di lettere e rispondere con questo al cliente.
+    
+    N.B: essendo la socket senza connessione utilizziamo la socket UPD (User Datagram Protocol).
+    > sd = socket(AF_INET, SOCK_DGRAM, 0);
+    > sendto(...)
+    > recvfrom(...)
+
+    #### RowDeletion: con connessione.
+    - Client:
+        user input: nome file (stringa) e numero di linea (int).
+        invia la richiesta al server
+        riceve come risposta il nuovo contenuto del file
+        lo inserisce nel file system, stampandolo a video. 
+
+    - Server:
+        gestisce in **modo parallelo** la funzionalità di eliminazione della linea.
+        per ogni richiesta il processo figlio:
+            - riceve il nome file (stringa) e numero di linea (int)
+            - effettua l'eliminazione
+            - restituisce il risultato al client.
+
+    N.B: esssendo la socket con connessione
+    > listen_sd = socket(AF_INET, SOCK_STREAM, 0);
+    > if ((connection_sd = accept(listen_sd, (struct sockaddr_in *)&client_address, &len)) < 0) {...}

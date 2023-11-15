@@ -1,3 +1,9 @@
+/*
+ * Socket C Senza connessione: Parola più lunga.
+ * Client
+ * 
+*/
+
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -16,36 +22,36 @@ int main(int argc, char **argv){
     struct sockaddr_in clientaddr, serveraddr;
     struct hostent *host;
     int port, index, sd, len, response;
+    socklen_t serverlen;
 
     if (argc != 3){
-        printf("Error: %s serverAddress serverPort\n", argv[0]);
+        printf("Usage: %s serverAddress serverPort\n", argv[0]);
         exit(1);
     }
 
-    /* INPUT FORMAT CONTROL */
+    /* Input Format Control */
     index = 0;
     while (argv[2][index] != '\0') {
         if ((argv[2][index] < '0')||(argv[2][index] > '9')){
             printf("Port argument is not a number");
-            printf("Error: %s serverAddress serverPort\n", argv[0]);
+            printf("Usage: %s serverAddress serverPort\n", argv[0]);
             exit(2);
         }
         index++;
     }
 
-    /* INIZIALIZZAZIONE INDIRIZZO CLIENT AND SERVER */
-    // passando 0 ci leghiamo ad un qualsiasi indirizzo libero. può non funzionare. Altre opzioni?
-    memset((char * ) & clientaddr, 0, sizeof(struct sockaddr_in));
+    /* Initialize client and server address */
+    memset(&clientaddr, 0, sizeof(struct sockaddr_in));
     clientaddr.sin_family = AF_INET;
     clientaddr.sin_addr.s_addr = INADDR_ANY;
     clientaddr.sin_port = 0;
 
-    memset((char * ) & serveraddr, 0, sizeof(serveraddr));
+    memset(&serveraddr, 0, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     host = gethostbyname(argv[1]);
     port = atoi(argv[2]);
 
-    /* INPUT VALIDATION */
+    /* Input Validation */
     if (port < 1024 || port > 65535) {
         printf("Error: %s non è una porta accettabile\n.", argv[2]);
         exit(2);
@@ -57,7 +63,7 @@ int main(int argc, char **argv){
     serveraddr.sin_addr.s_addr = ((struct in_addr *)(host -> h_addr))-> s_addr;
     serveraddr.sin_port = htons(port);
 
-    /* CREAZIONE SOCKET */
+    /* Socket Creation */
     sd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sd < 0){
         perror("Apertura socket");
@@ -65,37 +71,38 @@ int main(int argc, char **argv){
     }
     printf("Client: creata la socket. SD=%d\n", sd);
 
-    /* BIND SOCKET, a una porta scelta dal sistema. */
-    if (bind(sd, (struct sockaddr_in *) &clientaddr, sizeof(clientaddr)) < 0){
-        perror("Bind error");
+    /* Bind Socket */
+    if (bind(sd, (struct sockaddr *)&clientaddr, sizeof(clientaddr)) < 0){
+        perror("Error during socket binding");
         exit(1);
     }   
-    printf("Client: socket binded to port %d\n", clientaddr.sin_port);
+    printf("Client: socket bound to port %d\n", clientaddr.sin_port);
 
-    /* CORPO DEL CLIENT: ciclo di accettazione di richieste da utente. */
+    /* Client body: loop for accepting requests from user */
     Request req;
+
     printf("\nInserisci il nome di un file: ");
     while(scanf("%255s", req.nome_file)==1){
-        /* richiesta operazione */
-        len = sizeof(serveraddr);
-        if (sendto(sd, &req, sizeof(Request), 0, (struct sockaddr_in *)&serveraddr, len) < 0){
+        /* sending request */
+        serverlen = sizeof(serveraddr);
+        if (sendto(sd, &req, sizeof(Request), 0, (struct sockaddr *)&serveraddr, serverlen) < 0){
             perror("Error sending the request");
             continue;
         }
         printf("\nRequest sent for file {%s}.", req.nome_file);
 
-        /* richiesta del risultato */
-        if (recvfrom(sd, &response, sizeof(response), 0, (struct sockaddr_in *) &serveraddr, &len) < 0){
+        /* receiving response */
+        if (recvfrom(sd, &response, sizeof(response), 0, (struct sockaddr *) &serveraddr, &serverlen) < 0){
             perror("Error receiving the response");
             continue;
         }
-        printf("\nLa lunghezza della parola più lunda dentro %s è %i", req.nome_file, response);
+        printf("\nThe longest word in %s is %i characters long", req.nome_file, response);
 
         // New request:
         printf("\n\nInserisci il nome di un file, EOF per terminare: ");
     }
 
-    /* Cleaning */
+    /* Cleaning up */
     close(sd);
     printf("\n Client: terminazione.\n");
     exit(0);
