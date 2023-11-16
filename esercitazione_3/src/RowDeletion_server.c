@@ -1,3 +1,9 @@
+/*
+ * Socket C Con connessione: row deletion.
+ * Server
+ * 
+*/
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -12,20 +18,23 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-/********************************************************/
+typedef struct {
+    char nome_file[255];
+    int numero_linea;
+} Request;
+
 void gestore(int signo) {
     int stato;
-    printf("esecuzione gestore di SIGCHLD\n");
-    wait(&stato);
+    while(waitpid(-1, &stato, WNOHANG) > 0) {
+        // Gestione del processo figlio terminato
+    }
 }
-/********************************************************/
 
 int main(int argc, char ** argv) {
     int listen_sd, connection_sd;
     int port, len;
     const int on = 1;
     struct sockaddr_in client_address, server_address;
-    struct hostent * host;
 
     /* CONTROLLO ARGOMENTI */
     if (argc != 2){
@@ -67,7 +76,7 @@ int main(int argc, char ** argv) {
     }
     printf("Server: set opzioni socket d'ascolto\n");
 
-    if(bind(listen_sd, (struct sockaddr_in * )&server_address, sizeof(server_address)) < 0) {
+    if(bind(listen_sd, (struct sockaddr * )&server_address, sizeof(server_address)) < 0) {
         perror("bind socket d'ascolto");
         exit(1);
     }
@@ -84,7 +93,7 @@ int main(int argc, char ** argv) {
 
     for (;;){
         len = sizeof(client_address);
-        if ((connection_sd = accept(listen_sd, (struct sockaddr_in *)&client_address, &len)) < 0) {
+        if ((connection_sd = accept(listen_sd, (struct sockaddr *)&client_address, &len)) < 0) {
             if (errno == EINTR){
                 perror("Forzo la continuazione della accept");
                 continue;
@@ -92,22 +101,55 @@ int main(int argc, char ** argv) {
                 exit(1);
         }
 
-        if (fork() == 0) {
-            close(listen_sd);
-            printf("Server (Child): inside.");
-            host = gethostbyaddr((char *)&client_address.sin_addr, sizeof(client_address.sin_addr), AF_INET);
-            if (host == NULL) {
-                printf("client host information not foun\n");
-                continue;
-            } else {
-                printf("Server (figlio): host client is %s\n", host->h_name);
-            }
+        if (fork() != 0) {
+            /* Processo Padre*/
             close(connection_sd);
         } else {
-            printf("Server (Parent): inside.");
+            /* Processo Figlio*/
+            close(listen_sd);
+            Request req;
+            char ch;
+            int file_descriptor, current_line = 1;
+
+            read(connection_sd, &req, sizeof(req));
+            
+            printf("\n\nRequest received: { nome_file: %s, numero_riga: %i}", req.nome_file, req.numero_linea);
+            
+            /* Apertura file */
+            file_descriptor = open(req.nome_file, O_RDONLY);
+            if (file_descriptor < 0)
+            {
+                perror("Impossibile aprire il file.");
+                ch = 'X';
+                write(connection_sd, &ch, sizeof(char));
+                dup(connection_sd);
+                close(connection_sd);
+                exit(2);
+            }
+
+            while(read(file_descriptor, &ch, sizeof(char)) > 0){
+                if ( ch == '\n') current_line++;
+                if (current_line != req.numero_linea){
+                    if (send(connection_sd, &ch, sizeof(char), 0) < 0){
+                        perror("Error sending char to socket");
+                        break;
+                    }
+                } else {
+                    printf("%c", ch);
+                }
+            }
+            printf("\n");
+
+            dup(connection_sd);
+            close(file_descriptor);
+            close(connection_sd);
+            exit(0);
+            /* End Processo Figlio */
         }
-        close(connection_sd);
     }
+
+    close(listen_sd); //mai raggiunto perchè il server è in un ciclo infinito
+    return 0;
 }
 
 
