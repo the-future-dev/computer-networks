@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
 
     /* corpo client*/
     printf("Nome file, EOF per terminare: ");
-    while(scanf("%255s", req.nome_file)==1){
+    while(gets(req.nome_file, sizeof(req.nome_file), stdin)){
         printf("Numero linea: ");
         if (scanf("%i", &(req.numero_linea)) != 1){
             char c;

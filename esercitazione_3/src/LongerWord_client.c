@@ -82,7 +82,7 @@ int main(int argc, char **argv){
     Request req;
 
     printf("\nInserisci il nome di un file: ");
-    while(scanf("%255s", req.nome_file)==1){
+    while(gets(req.nome_file)){
         /* sending request */
         serverlen = sizeof(serveraddr);
         if (sendto(sd, &req, sizeof(Request), 0, (struct sockaddr *)&serveraddr, serverlen) < 0){
