@@ -70,3 +70,11 @@ Server: receives the request from the client; verifies the file and the line exi
     N.B: esssendo la socket con connessione
     > listen_sd = socket(AF_INET, SOCK_STREAM, 0);
     > if ((connection_sd = accept(listen_sd, (struct sockaddr_in *)&client_address, &len)) < 0) {...}
+
+
+    ##### Soluzione proposta
+    Nella [soluzione proposta](./esercitazione_3/srcProp/) il file appartiene al lato client. Questo implica che:
+    - il file sia aperto dal client che lo legge,
+    - lo invia al server,
+    - riceve il nuovo contenuto dal server
+    - salva il nuovo file passato dal server.
