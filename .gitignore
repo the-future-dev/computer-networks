@@ -9,3 +9,10 @@ client
 server
 output.txt
 *.class
+
+.vscode
+client1
+client2
+*.txt
+.classpath
+.project
