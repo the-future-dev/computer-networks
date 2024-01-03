@@ -13,12 +13,21 @@ public class ServerInfo
         this.file = file;
     }
 
-    public boolean equals(ServerInfo serverInfo)
+    @Override
+    public boolean equals(Object obj)
     {
-        return this.IP.getHostAddress()
-                .equalsIgnoreCase(serverInfo.IP.getHostAddress())
-            && this.file.equalsIgnoreCase(serverInfo.file)
-            && this.porta == serverInfo.porta;
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+
+        ServerInfo other = (ServerInfo) obj;
+
+        // Doppia casistica: stesso endpoint o stesso nome file.
+        return (this.IP.equals(other.IP) && this.porta == other.porta) || this.file.equals(other.file);
     }
 
     @Override
