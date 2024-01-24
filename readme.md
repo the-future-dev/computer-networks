@@ -170,7 +170,10 @@ Consigli:
                 -- se direttorio esiste: restituisce il nome dei file contenuti in tutti i direttori di secondo livello
                 -- in caso di errore: notificare l'errore
             N.B: il server chiude la connessione solamente alla ricezione del fine file dal client
-
+        
+        Esistono due protocolli per il servizio stream:
+            - schema 1: Una connessione per ogni richiesta.
+            - schema 2: una sola connessione per tutta la sessione cliente.
 
 5. ### Java RMI
     #### Svolta

@@ -1,18 +1,15 @@
 Da preparare
 ### C
-- lettura | scrittura file in C
-- redirezione output su un file | verso il client
-
-- socket con connessione: BefanaFelice
-- socket senza connessione: BefanaFelice
-- server multiservizio: primitiva select: BefanaFelice
+- [x] lettura | scrittura file in C
+- [ ] redirezione output su un file | verso il client
+- [x] socket con connessione: BefanaFelice
+- [x] socket senza connessione: BefanaFelice
+- [x] server multiservizio: primitiva select: BefanaFelice
 
 ### JAVA
-- socket con connessione
-- socket senza connessione
-
-- java RMI: BefanaFelice
-
+- [x] socket con connessione
+- [x] socket senza connessione
+- [x] java RMI
 
 
 
